@@ -1,4 +1,10 @@
-﻿#include <iostream>
+﻿/*
+ * File: Calculator.cpp
+ * ---------------
+ * Programm gets formula string from user in console, and clculates
+ * it's due to Shunting-Yard algorythm.
+ */
+#include <iostream>
 #include <cmath>
 #include "console.h"
 #include "simpio.h"
@@ -17,45 +23,53 @@ double formulaStringScanning(TokenScanner& scanner,
 void sortTokenByStacks(string token,
                        MyStack<double>& stackNumbers,
                        MyStack<string>& stackOperators);
-double singleCalculation(double num1, string oper, double num2);
+double singleCalculation(double num1, string operatorToken, double num2);
 double getFinalStacksResult(MyStack<double> stackNumbers,
                        MyStack<string> stackOperators);
-void twoNumsProcess(MyStack<double>& numStack,
-                    MyStack<string>& operStack);
-int getOperPrecedence(string oper);
+void twoNumsProcess(MyStack<double>& stackNumbers,
+                    MyStack<string>& stackOperators);
+int getOperPrecedence(string operatorToken);
 
 double powFunction(TokenScanner& scanner);
 double sqrtFunction(TokenScanner& scanner, double xValue);
 
-//Global variable
+/* Global variable: failFlag
+ * ---------------------------------------------------------
+ * Rises if there are some fails are obtained during program.
+ * It's used globaly to sipmlifies code. */
 bool failFlag = false;
 
-// Console settings
-void consoleSettings();
-const string programTitle = "Calculator";
-const bool consoleEcho = false;
-
 int main() {
-    /*  */
-    consoleSettings();
-    /* User input  */
-    string formula = getLine("Enter your formula: ");
-    // string formula = "x + 6";
-    /* Value for x-variable for current formula
-     * It might be useful for equation greaphics */
-    double xValue = 0;
-
-    /* Simple calculation process */
-    double result = formulaProcess(formula, xValue);
-    cout << "YOUR RESULT IS " << result;
+    while(1){
+        /* User input  */
+        string formula = getLine("ENTER YOUR FORMULA (OR TYPE \"quit\" TO FINISH): ");
+        if(formula == "quit"){
+            cout << "-----------------------------------------------" << endl;
+            cout << "PROGRAM IS FINISHED" << endl;
+            break;
+        }
+        /* Value for x-variable for current formula
+         * It might be useful for equation graphics */
+        double xValue = 0;
+        /* Gets calculation result for current formula */
+        double result = formulaProcess(formula, xValue);
+        cout << "= " << result << endl;
+    }
     return 0;
 }
 
-/* Create simple formula calculation process */
+/* Function: formulaProcess()
+ * --------------------------------------------------------------------------------
+ * Creates TokenScanner, and invokes main process function formulaStringScanning()
+ * for this scanner. Returns double of calculated result. In case of process
+ * faults zero result is returned, and fail message is shown.
+ *
+ * @param formula User formula to process
+ * @param xValue  Value for x variable in user equation */
 double formulaProcess(string formula, double xValue){
     TokenScanner scanner(formula);
     scanCPlusPlusTokens(scanner);
-    bool bracketsOpenedFlag = false;//Are were brackets opened before function call
+    bool bracketsOpenedFlag = false;//Initiate flag for next recursive call
     double result = formulaStringScanning(scanner,
                                           bracketsOpenedFlag,
                                           xValue);
@@ -63,97 +77,115 @@ double formulaProcess(string formula, double xValue){
         /* Shows if there were some errors due to calculation process */
         cout << "CALCULATION FAULT!" << endl;
     }
+
     return result;
 }
 
-/* Recursively scanns formula and sorts tokens through
- * stacks due to shunting-yard algorithm */
+/* Function: formulaStringScanning()
+ * -----------------------------------------------------------------------------------------//
+ * Recursively scanns formula string and sorts each token through stacks due to shunting-yard
+ * algorithm. If "()" appear in this recursion  it controls brackets condition. Detects two
+ * pow, sqrt - additional library function in user  formula. Breaks process due to global
+ * failFlag. Returns double of calculated result. In case of process faults zero result
+ * is returned, and fail message is shown.
+ *
+ * @param scanner               Scanner for main formula string
+ * @param bracketsOpenedBefore  Shows if brackets were opened before this recursion invocation
+ * @param xValue                Value for x variable in user equation */
 double formulaStringScanning(TokenScanner& scanner,
                              bool &bracketsOpenedBefore,
                              double xValue){
-    if(failFlag){return 0;}
+    if(failFlag){return 0;}//Global flag apearance
     else{
-        MyStack<double> stackNumbers;
+        MyStack<double> stackNumbers;//Stacks for current recursion invocation
         MyStack<string> stackOperators;
         string token = "";
-        bool bracketsOpenedHere = false;
+        bool bracketsOpenedHere = false;//Rises if "(" appear in this recursion
         while(scanner.hasMoreTokens()){
             token = scanner.nextToken();
             if(token == "x"){
-                /* Changes x-token by user xValue  */
+                /* Sabstitute x-token by user xValue param */
                 stackNumbers.push(xValue);
             }
             else if(token == "pow"){
-                /* Solves library pow function  */
+                /* Lunches library pow function process  */
                 stackNumbers.push(powFunction(scanner));
             }else if(token == "sqrt"){
-                /* Solves library sqrt function  */
+                /* Lunches library sqrt function process  */
                 stackNumbers.push(sqrtFunction(scanner, xValue));
-            }else{
-                    /* Brackets case */
+            }else{//Brackets case
                     if(token == "("){
                         bracketsOpenedHere = true;
-                        /* Make new formula recursion */
+                        /* Calls new formula recursion for this scanner */
                         stackNumbers.push(formulaStringScanning(scanner,
                                                                 bracketsOpenedHere,
                                                                 xValue));
                     }else if(token == ")"){
-                            if(bracketsOpenedBefore){
-                                /* It is just close brackets expression */
-                                bracketsOpenedBefore = false;//it's end of this recursion
-                                break;//Break to jump to end of calculation
-                            }else{
-                                /* This calculation start without opened brackets */
+                            if(bracketsOpenedBefore){        //Brackets are closed correctly
+                                bracketsOpenedBefore = false;//it is end of this recursion
+                                break;                       //Break to jump to end of calculation
+                            }
+                            else{                           //")" token and no bracketsOpenedBefore
+                                failFlag = true;             //This calculation start without opened brackets
                                 cout <<  "NOT OPENED BRACKETS! " << endl;
-                                failFlag = true;
-                                break;//Break to show  error to user
+                                break;                       //Break to show  error to user
                             }
                     }else{
-                        if(failFlag)break;//don't do any calculations
+                        if(failFlag)break;
+                        /* If no fails, and token is valid - lunches Shunting-Yard sorting  */
                         sortTokenByStacks(token, stackNumbers, stackOperators);
                     }
-            }//end else statement
-        }//end of while(scanner.hasMoreTokens())
+            }//End of Brackets case else statement
+        }//End of while(scanner.hasMoreTokens())
 
-        /* End of process */
-        if(bracketsOpenedBefore){//Simple checking are brackets closed here
+        /* Shunting-yard final calculation */
+        if(bracketsOpenedBefore){//If brackets haven't been closed in this recursion
              cout <<  "NOT CLOSED BRACKETS! " << endl;
              failFlag = true;
              return 0;
         }else{
-            if(failFlag){
+            if(failFlag){//There were some other fails
                 return 0;
             }else{
-                 /* End of process calculation */
+                /* Calculate main result, due to stacks, for current calculation stage. */
                 return getFinalStacksResult(stackNumbers, stackOperators);
             }
         }
-    }
+    }//End of else statement (no failFlag at recursion start)
 }
 
-/* Sort current tokens through
- * stacks due to shunting-yard algorithm */
+/* Function: sortTokenByStacks()
+ * Usage: is called by formulaStringScanning() for single token;
+ * -----------------------------------------------------------------------------------------//
+ * Sort this token through the stacks. If token is number - push it to stackNumbers.
+ * If token is valid operator token - process it due to Shunting-Yard conditions.
+ *
+ * @param token             Current token in formula string
+ * @param stackNumbers      Stack of number values for current recursion
+ * @param stackOperators    Stack of operators for current recursion */
 void sortTokenByStacks(string token,
                 MyStack<double> &stackNumbers,
                 MyStack<string> &stackOperators){
-    if(stringIsDouble(token)){ /* Token is number */
+    if(stringIsDouble(token)){ //Token is number
         double num = stringToDouble(token);
-        stackNumbers.push(num);
-    }else{/* Token is operator or ")" */
-        /* If operators stack empty - push there without conditions */
-        if(stackOperators.isEmpty()){
+        stackNumbers.push(num);//Just save token to stack
+    }else{// Token is operator
+        /* Main operators process */
+        if(stackOperators.isEmpty()){//If operators stack empty - push there without conditions
             stackOperators.push(token);
-        }else{
-            string topOper = stackOperators.peek();
+        }else{//If there are some operators in stack
+            string topOper = stackOperators.peek();//Get top operator
             if(getOperPrecedence(topOper) < getOperPrecedence(token)){
-                /* Last operator in stack precednce  is
-                 * weaker then this token operator */
+                /* Top operator precednce is
+                 * weaker then this token operator - just save this token */
                 stackOperators.push(token);
             }else{
-                /* Last operator in stack precednce  is higher -
-                 * evaluate two last numbers from stack */
-                if(!failFlag){
+                /* Top operator precednce is higher - evaluate two top numbers
+                 * with top operator, and sort current token again */
+                if(!failFlag){//If there some fails - break this function
+                 /* Main calculation for top numbers and top operator  */
                  twoNumsProcess(stackNumbers, stackOperators);
+                 /* Call sorting again to process current token operator  */
                  sortTokenByStacks(token, stackNumbers, stackOperators);
                 }
             }
@@ -161,97 +193,139 @@ void sortTokenByStacks(string token,
     }
 }
 
-/* End of program function - returns result of end stacks values processing */
+/* Function: getFinalStacksResult()
+ * Usage: is called by formulaStringScanning() at the end of current recursion.
+ * -----------------------------------------------------------------------------------------//
+ * Calculates main result, due to stacks, for current formulaStringScanning() recursion
+ * stage.
+ * Precondition: it's end of main formula string or brackets closed process.
+ *
+ * @param stackNumbers      Stack of number values for current recursion
+ * @param stackOperators    Stack of operators for current recursion */
 double getFinalStacksResult(MyStack<double> stackNumbers,
                        MyStack<string> stackOperators){
-    /* "End of string" or brackets closed process */
+    /* Lunches calculations for all remain values from stacks */
     while(!stackOperators.isEmpty()){
-        if(failFlag) {
-            break;
-        }
-        /* End of calculation process  */
+        if(failFlag) break;//Some fails appear during calculations
+        /* Calculation for two top stack numbers and single top operator  */
         twoNumsProcess(stackNumbers, stackOperators);
     }
-    /* End result returning */
-    if(!stackNumbers.isEmpty()){
-        return stackNumbers.pop();
-    }else{
-        return 0;
-    }
+    /* End result value remains at top of numbers stack */
+    if(!failFlag){return stackNumbers.pop();
+    }else{return 0;}
 }
 
-/* Library pow function execution
- * Believe that it's normalized function - like pow(1,9)
- * without internal brackets and evaquations */
+/* Function: powFunction()
+ * Usage: is called by formulaStringScanning() function if it detect pow token in formula
+ * -----------------------------------------------------------------------------------------//
+ * Library pow function execution. Believe that it's normalized function -
+ * without any variables like "x" or "y" - just pow(<value>, <power for value>):
+ * pow(2, 4) = 16
+ * Expects brackets, and return pow function result for values in brackets.
+ *
+ * @param scanner      TokenScanner for user formula */
 double powFunction(TokenScanner& scanner){
+    bool powFail = false;
     string token = "";
     string num1 = "";
     string num2 = "";
     while(scanner.hasMoreTokens()){
-        token = scanner.nextToken();
+        token = scanner.nextToken();//waiting for brackets at this place
         if(token == "("){
-            num1 = scanner.nextToken();//pow function param
+            num1 = scanner.nextToken();//pow function param1
             token = scanner.nextToken();//waiting coma at this place
             if(token == ","){
-                num2 = scanner.nextToken();//pow function param
+                num2 = scanner.nextToken();//pow function param2
                 token = scanner.nextToken();//waiting for brackets at this place
                 if(token == ")"){
                     break;
-                }
-            }
+                }else{powFail = true;}
+            }else{powFail = true;}
+        }else{powFail = true;}
+
+        if(powFail){
+             cout <<  "POW FUNCTION FAULT" << endl;
+             failFlag = true;
+             return 0;
         }
     }
-    /* Calculate pow function result */
+    /* Returns pow function result */
     return pow(stringToDouble(num1), stringToDouble(num2));
 }
 
-/* Library sqrt function execution
- * Resolves equation after "sqrt" token and returns value of
- * sqrt library function for obtained param */
+/* Function: sqrtFunction()
+ * Usage: is called by formulaStringScanning() function if it detect sqrt token in formula
+ * -----------------------------------------------------------------------------------------//
+ * Library sqrt function execution. Expects for brackets and calls internal
+ * formulaStringScanning process for expression in brackets. Return sqrt function result
+ * for obtained value in brackets.
+ *
+ * @param scanner   TokenScanner for user formula
+ * @param xValue    Value for x variable in user equation */
 double sqrtFunction(TokenScanner& scanner, double xValue){
+    bool sqrtFail = false;
     string token = "";
     double num1 = 0;
-    while(scanner.hasMoreTokens()){
+    if(scanner.hasMoreTokens()){
         token = scanner.nextToken();
-        if(token == "("){
+        if(token == "("){//waiting for brackets at this place
             bool bracketsOpened = true;
+            /* Calls internal formulaStringScanning process for expression in brackets */
             num1 = formulaStringScanning(scanner,
                                          bracketsOpened,
                                          xValue);
-            break;
-        }
+        }else{sqrtFail = true;}
     }
-    return sqrt((num1));
+
+    if(sqrtFail){
+         cout <<  "SQRT FUNCTION FAULT" << endl;
+         failFlag = true;
+         return 0;
+    }
+
+    /* Returns sqrt function result */
+    return sqrt(num1);
 }
 
 /* Takes to last digits and one last operator
  * Returns operation result */
-void twoNumsProcess(MyStack<double> &numStack, MyStack<string> &operStack){
+
+/* Function: twoNumsProcess()
+ * Usage: is called by formulaStringScanning() function if it detect sqrt token in formula
+ * -----------------------------------------------------------------------------------------//
+ * Library sqrt function execution. Expects for brackets and calls internal
+ * formulaStringScanning process for expression in brackets. Return sqrt function result
+ * for obtained value in brackets.
+ *
+ * @param stackNumbers      Stack of number values for current recursion
+ * @param stackOperators    Stack of operators for current recursion */
+void twoNumsProcess(MyStack<double> &stackNumbers, MyStack<string> &stackOperators){
     /* Stacks elements validation checking for calculating process */
-    if((numStack.size() - operStack.size()) != 1){       
-        cout << "CHECK YOUR ENTER!" << endl;
+    if((stackNumbers.size() - stackOperators.size()) != 1){
+        cout << "CHECK YOUR INPUT, NOT ENOUGH NUMBERS IN FORMULA!" << endl;
         failFlag = true;
     }else{
         /* Calculating process */
-        double num2 = numStack.pop();
-        double num1 = numStack.pop();
-        string thisOper = operStack.pop();
+        double num2 = stackNumbers.pop();
+        double num1 = stackNumbers.pop();
+        string thisOper = stackOperators.pop();
         double result = singleCalculation(num1, thisOper, num2);
-        numStack.push(result);
+        stackNumbers.push(result);
     }
 }
 
-/* Returns precedence of operators to use in shunting-yard algorithm */
-int getOperPrecedence (string oper){
+/* Function: getOperPrecedence()
+ * Usage: is called by sortTokenByStacks() function to get param operator priority */
+int getOperPrecedence (string operatorToken){
     int result = 0;
-    if(oper == "-")result = 0;
-    else if(oper == "+")result = 0;
-    else if(oper == "*")result = 1;
-    else if(oper == "/")result = 1;
-    else if(oper == "%")result = 1;
-    else if(oper == "^")result = 2;
-    else if(oper == "pow")result = 2;
-    else if(oper == "sqrt")result = 2;
+    if(operatorToken == "-")result = 0;
+    else if(operatorToken == "+")result = 0;
+    else if(operatorToken == "*")result = 1;
+    else if(operatorToken == "/")result = 1;
+    else if(operatorToken == "%")result = 1;
+    else if(operatorToken == "^")result = 2;
+    else if(operatorToken == "pow")result = 2;
+    else if(operatorToken == "sqrt")result = 2;
     else{
         failFlag = true;
         cout << "UNKNOWN OPERATOR" << endl;
@@ -259,22 +333,24 @@ int getOperPrecedence (string oper){
     return result;
 }
 
-/* Executes single operation with two numbers */
-double singleCalculation(double num1, string oper, double num2){
+/* Function: singleCalculation()
+ * Usage: is called by twoNumsProcess() function to make single
+ * operation with two param numbers due to this param operator */
+double singleCalculation(double num1, string operatorToken, double num2){
     double result = 0;
-    if(oper == "+"){
+    if(operatorToken == "+"){
         result = num1 + num2;
-    }else if(oper == "-"){
+    }else if(operatorToken == "-"){
         result = num1 - num2;
-    }else if(oper == "*"){
+    }else if(operatorToken == "*"){
         result = num1 * num2;
-    }else if(oper == "/"){
+    }else if(operatorToken == "/"){
         result = num1 / num2;
-    }else if(oper == "%"){
+    }else if(operatorToken == "%"){
         result = (int)num1 % (int)num2;
-    }else if(oper == "^"){
+    }else if(operatorToken == "^"){
         result = pow(num1, num2);
-    }else if(oper == "pow"){
+    }else if(operatorToken == "pow"){
         result = pow(num1, num2);
     }else{
         cout << "OPERATOR FAIL!" << endl;
@@ -283,12 +359,12 @@ double singleCalculation(double num1, string oper, double num2){
     return result;
 }
 
-/* Sets token scanner features */
+/* Function: scanCPlusPlusTokens()
+ * Sets param scanner features. */
 void scanCPlusPlusTokens(TokenScanner & scanner) {
     scanner.ignoreWhitespace();
     /* Return numbers */
     scanner.scanNumbers();
-    /* To recognize symbol "..." like end of sentence */
     scanner.addOperator("%");
     scanner.addOperator("/");
     scanner.addOperator("*");
@@ -296,8 +372,3 @@ void scanCPlusPlusTokens(TokenScanner & scanner) {
     scanner.addOperator(")");
 }
 
-/* Make console output window more convenient */
-void consoleSettings(){
-    setConsoleWindowTitle(programTitle);
-    setConsoleEcho(consoleEcho);
-}
