@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <cmath>
+#include "strlib.h"
 #include "console.h"
 #include "simpio.h"
 #include "tokenscanner.h"
@@ -48,9 +49,15 @@ bool failFlag = false;
  * -----------------------------------------------------------------------------------------*/
 
 int main() {
+    cout << "TYPE YOUR FORMULA OR PRESS 'q' TO QUIT"  << endl;
+    cout << "-----------------------------------------------" << endl;
     while(true){
-        /* User input  */
-        string formula = getLine("ENTER YOUR FORMULA: ");
+        /* User's formula input  */
+        string formula = getLine();
+        /* End of programm condition */
+        if(toLowerCase(formula) == "q"){
+            break;
+        }
         /* Value for x-variable for current formula
          * It may be useful for equation graphics */
         double xValue = 0;
@@ -58,13 +65,6 @@ int main() {
         /* Main programm process */
         double result = formulaProcess(formula, xValue);
         cout << "= " << result << endl;
-
-        /* End of programm condition */
-        cout << "-----------------------------------------------" << endl;
-        if(getLine("TYPE \"q\" TO FINISH OR ANY KEY TO CONTINUE") == "q"){
-            break;
-        }
-        cout << "-----------------------------------------------" << endl;
     }
 
     cout << "-----------------------------------------------" << endl;
