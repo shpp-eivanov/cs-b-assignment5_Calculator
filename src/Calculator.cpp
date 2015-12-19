@@ -1,7 +1,10 @@
 ﻿/********************************************************************************************
  * File: Calculator.cpp
  * ----------------------
- * v.1 2015/11/15
+ * v.2 2015/12/19 - changed:
+ * - sortTokenByStacks()
+ * - singleCalculation()
+ *
  * Program gets formula string from user in console, and clculates
  * it's due to Shunting-Yard algorythm.
  ********************************************************************************************/
@@ -169,7 +172,9 @@ double formulaStringScanning(TokenScanner& scanner,
     }//End of else statement (no failFlag at recursion start)
 }
 
-/* Function: sortTokenByStacks()
+/* Function: sortTokenByStacks() - Modified:
+ * It was added minus detection for equations like: 8^(-8 + 3)
+ *
  * Usage: is called by formulaStringScanning() for single token;
  * -----------------------------------------------------------------------------------------//
  * Sort this token through the stacks. If token is number - push it to stackNumbers.
@@ -183,14 +188,19 @@ void sortTokenByStacks(string token,
                 Stack<string> &stackOperators){
     if(stringIsDouble(token)){ //Token is number
         double num = stringToDouble(token);
+        if((stackOperators.size() == 1) && (stackOperators.peek() == "-")){
+            num = -1 * num;
+            stackOperators.pop();
+        }
         stackNumbers.push(num);//Just save token to stack
     }else{// Token is operator
         /* Main operators process */
         if(stackOperators.isEmpty()){//Empty - push there without conditions
             stackOperators.push(token);
         }else{//If there are some operators in stack
-            string topOper = stackOperators.peek();//Get top operator
-            if(getOperPrecedence(topOper) < getOperPrecedence(token)){
+            string topOperator = stackOperators.peek();//Get top operator
+
+            if(getOperPrecedence(topOperator) < getOperPrecedence(token)){
                 /* Top operator precednce is
                  * weaker then this token operator - just save this token */
                 stackOperators.push(token);
@@ -351,7 +361,9 @@ int getOperPrecedence (string operatorToken){
     return result;
 }
 
-/* Function: singleCalculation()
+/* Function: singleCalculation() - Modified:
+ * Unnecessary condition (operatorToken == "pow") is detected
+ *
  * Usage: is called by twoNumsProcess() function to make single
  * operation with two param numbers due to this param operator */
 double singleCalculation(double num1, string operatorToken, double num2){
@@ -373,8 +385,8 @@ double singleCalculation(double num1, string operatorToken, double num2){
         result = (int)num1 % (int)num2;
     }else if(operatorToken == "^"){
         result = pow(num1, num2);
-    }else if(operatorToken == "pow"){
-        result = pow(num1, num2);
+//    }else if(operatorToken == "pow"){
+//        result = pow(num1, num2);
     }else{
         cout << "   - OPERATOR FAIL!" << endl;
         result = 0;
