@@ -17,9 +17,10 @@
 
 using namespace std;
 
-
-/* Declarations
+/*------------------------------------------------------------------------------------------//
+ * Declarations.
  * -----------------------------------------------------------------------------------------*/
+
 void setScannerOptions(TokenScanner & scanner);
 double getFormulaResult(string formula);
 double scanFormulaString(TokenScanner& scanner,
@@ -61,9 +62,8 @@ int main() {
     return 0;
 }
 
-/* Function: formulaProcess()
- * getUserFormulaResult
- * -----------------------------------------------------------------------------------------//
+/* Function: getUserFormulaResult()
+ * --------------------------------
  * Creates TokenScanner, and invokes main process function formulaStringScanning()
  * for this scanner. Returns double of calculated result. In case of process
  * faults zero result is returned, and fail message is shown.
@@ -83,8 +83,8 @@ double getFormulaResult(string formula) {
     return result;
 }
 
-/* Function: formulaStringScanning()
- * -----------------------------------------------------------------------------------------//
+/* Function: scanFormulaString()
+ * -----------------------------
  * Recursively scanns formula string and sorts each token through stacks due to shunting-yard
  * algorithm. If "()" appear in this recursion  it controls brackets condition. Detects two
  * pow, sqrt - additional library function in user  formula. Breaks process due to global
@@ -157,11 +157,8 @@ double scanFormulaString(TokenScanner& scanner, bool& bracketsOpenedBefore) {
     }
 }
 
-/* Function: sortTokenByStacks() - Modified:
- * It was added minus detection for equations like: 8^(-8 + 3)
- *
- * Usage: is called by formulaStringScanning() for single token;
- * -----------------------------------------------------------------------------------------//
+/* Function: sortTokenByStacks()
+ * -----------------------------
  * Sort this token through the stacks. If token is number - push it to numbersStack.
  * If token is valid operator token - process it due to Shunting-Yard conditions.
  *
@@ -204,10 +201,8 @@ void sortTokenByStacks(string token,
     }
 }
 
-
 /* Function: getFinalStacksResult()
- * Usage: is called by formulaStringScanning() at the end of current recursion.
- * -----------------------------------------------------------------------------------------//
+ * ---------------------------------
  * Calculates main result, due to stacks, for current formulaStringScanning() recursion
  * stage.
  * Precondition: it's end of main formula string or brackets closed process.
@@ -243,8 +238,7 @@ double getFinalStacksResult(Stack<double> numbersStack,
 }
 
 /* Function: powFunction()
- * Usage: is called by formulaStringScanning() function if it detect pow token in formula
- * -----------------------------------------------------------------------------------------//
+ * ------------------------
  * Library pow function execution. Expects sequentally:
  * - brackets, param1, coma, param2, brackets.
  *
@@ -288,8 +282,7 @@ double powFunction(TokenScanner& scanner) {
 }
 
 /* Function: sqrtFunction()
- * Usage: is called by formulaStringScanning() function if it detect sqrt token in formula
- * -----------------------------------------------------------------------------------------//
+ * -------------------------
  * Library sqrt function execution. Expects for brackets and involves
  * formulaStringScanning process for expression in brackets. Return sqrt function result
  * for obtained value in brackets.
@@ -322,8 +315,7 @@ double sqrtFunction(TokenScanner& scanner) {
 }
 
 /* Function: calculateResultForTopStacksValues()
- * Usage: is called by sortTokenByStacks() or getFinalStacksResult() functions
- * -----------------------------------------------------------------------------------------//
+ * ---------------------------------------------
  * Makes single calculation for two top numbers in stack, and return result to
  * numbersStack back.
  *
@@ -373,8 +365,7 @@ int getOperatorPriority(string operatorToken) {
     return result;
 }
 
-/* Function: getSimpleCalculationResult() - Modified:
- * unnecessary condition (operatorToken == "pow") is detected
+/* Function: getSimpleCalculationResult()
  * ---------------------------------------
  * Is called by calculateResultForTopStacksValues() function to make single
  * operation with two param numbers due to this param operator */
